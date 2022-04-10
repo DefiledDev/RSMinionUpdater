@@ -52,4 +52,9 @@ public class ObjectNode extends RSClass {
             insert("value", clazz.name, value.name, value.desc);
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
+    }
+
 }

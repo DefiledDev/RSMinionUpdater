@@ -118,4 +118,9 @@ public class Cache extends RSClass {
 
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "IterableHashTable", "Queue", "CacheNode" };
+    }
+
 }

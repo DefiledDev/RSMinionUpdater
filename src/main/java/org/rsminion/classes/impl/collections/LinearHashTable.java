@@ -8,6 +8,7 @@ import org.rsminion.core.matching.Matchers;
 import org.rsminion.core.matching.data.RSHook;
 import org.rsminion.tools.searchers.Searcher;
 import org.rsminion.tools.utils.SearchUtils;
+import org.rsminion.tools.utils.Utils;
 
 import java.lang.reflect.Modifier;
 
@@ -43,5 +44,10 @@ public class LinearHashTable extends RSClass {
                 clazz);
         if(values != null)
             insert("values", clazz.name, values.name, values.desc);
+    }
+
+    @Override
+    protected String[] initRequiredClasses() {
+        return Utils.EMPTY_ARRAY;
     }
 }

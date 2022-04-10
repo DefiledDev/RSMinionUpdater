@@ -155,6 +155,11 @@ public class HashTable extends RSClass {
             insert("buckets", clazz.name, buckets.name, buckets.desc);
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
+    }
+
     //Moved to method to avoid duplicate code
     private boolean checkForNativeFieldsUpwards(MethodSearcher methodSearcher, Pattern p) {
         int lineNumber = p.getFirstLine();

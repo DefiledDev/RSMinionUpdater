@@ -33,10 +33,13 @@ public class IntegerNode extends RSClass {
 
                     SearchUtils.countObjectFields(clazz) == 1 &&
 
-                    //SearchUtils.countObjectMethods(clazz) == 1 &&
+                    SearchUtils.countObjectMethods(clazz) == 1 &&
 
                     Searcher.findField(f -> !Modifier.isStatic(f.access) &&
-                            f.desc.equals("I"), clazz) != null)
+                            f.desc.equals("I"), clazz) != null &&
+
+                    Searcher.findMethod(m -> m.name.equals("<init>") &&
+                            SearchUtils.getParameters(m).length >= 1, clazz) != null)
                 registerClass(clazz);
 
         }
@@ -50,6 +53,11 @@ public class IntegerNode extends RSClass {
                 clazz);
         if(value != null)
             insert("value", clazz.name, value.name, value.desc);
+    }
+
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
     }
 
 }

@@ -2,6 +2,7 @@ package org.rsminion.tools.utils;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -12,6 +13,7 @@ import org.rsminion.tools.searchers.Searcher;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("unchecked")
@@ -120,6 +122,15 @@ public class SearchUtils {
                 count++;
         }
         return count;
+    }
+
+    public static boolean containsAnyOpcodes(MethodNode method, int... opcodes) {
+        AbstractInsnNode[] instructions = method.instructions.toArray();
+        for(AbstractInsnNode ain : instructions) {
+            if(Arrays.stream(opcodes).anyMatch(o -> ain.getOpcode() == o))
+                return true;
+        }
+        return false;
     }
 
     public static boolean isVoid(MethodNode method) {

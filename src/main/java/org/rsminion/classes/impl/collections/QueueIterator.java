@@ -95,4 +95,9 @@ public class QueueIterator extends RSClass {
 
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "IterableQueue" };
+    }
+
 }

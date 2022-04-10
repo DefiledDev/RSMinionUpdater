@@ -65,4 +65,9 @@ public class Iterable extends RSClass {
         }
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
+    }
+
 }

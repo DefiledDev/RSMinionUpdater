@@ -13,6 +13,8 @@ import org.rsminion.tools.utils.Utils;
 @Getter
 public class RSHook {
 
+    public static final RSHook[] EMPTY_ARRAY = new RSHook[0];
+
     private String name;
 
     private String obfName;

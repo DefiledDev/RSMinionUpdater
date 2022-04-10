@@ -74,4 +74,9 @@ public class Deque extends RSClass { //LinkedList
         }
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
+    }
+
 }

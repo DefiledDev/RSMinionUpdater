@@ -108,4 +108,9 @@ public class HashTableIterator extends RSClass {
 
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "IterableHashTable" };
+    }
+
 }

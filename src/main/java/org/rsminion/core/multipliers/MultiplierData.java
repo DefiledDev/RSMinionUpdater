@@ -18,7 +18,7 @@ public class MultiplierData {
             if(curr == null || (m.getValue() > curr.getValue()))
                 curr = m;
         }
-        this.multiplier = curr != null ? curr.getValue() : null;
+        this.multiplier = curr != null ? curr.getKey() : null;
     }
 
     public MultiplierData insert(Number multiplier) {

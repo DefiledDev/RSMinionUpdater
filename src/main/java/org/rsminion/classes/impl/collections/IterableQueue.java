@@ -94,6 +94,11 @@ public class IterableQueue extends RSClass {
 
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
+    }
+
     private boolean findHead(MethodNode isEmpty, ClassSearcher classSearcher,  MethodSearcher methodSearcher) {
         methodSearcher.setMethod(isEmpty);
 

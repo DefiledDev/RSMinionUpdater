@@ -1,7 +1,6 @@
 package org.rsminion.classes.impl.collections;
 
 import org.objectweb.asm.tree.ClassNode;
-import org.rsminion.classes.impl.Node;
 import org.rsminion.core.gamepack.GamePack;
 import org.rsminion.core.matching.data.RSHook;
 import org.rsminion.tools.searchers.Searcher;
@@ -40,6 +39,11 @@ public class CacheNode extends Node {
             }
         }
         return isFound();
+    }
+
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "Node" };
     }
 
 }

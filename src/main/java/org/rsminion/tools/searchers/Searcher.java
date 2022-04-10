@@ -8,6 +8,7 @@ import org.rsminion.core.gamepack.GamePack;
 import org.rsminion.tools.searchers.data.Pattern;
 import org.rsminion.tools.utils.Filter;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 @SuppressWarnings("unchecked")
@@ -243,5 +244,23 @@ public class Searcher {
     public static boolean classContainsMethod(ClassNode clazz, String methodName, String methodDesc) {
         return findMethod(m -> m.name.equals(methodName) &&
                 m.desc.equals(methodDesc), clazz) != null;
+    }
+
+    public static boolean classContainsFieldDesc(ClassNode clazz, String desc) {
+        List<FieldNode> fields = clazz.fields;
+        for(FieldNode field : fields) {
+            if(!Modifier.isStatic(field.access) && field.desc.equals(desc))
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean classContainsMethodReturnType(ClassNode clazz, String returnType) {
+        List<MethodNode> methods = clazz.methods;
+        for(MethodNode method : methods) {
+            if(!Modifier.isStatic(method.access) && method.desc.endsWith(returnType))
+                return true;
+        }
+        return false;
     }
 }

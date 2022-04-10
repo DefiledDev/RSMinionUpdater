@@ -55,4 +55,9 @@ public class Queue extends RSClass {
 
     }
 
+    @Override
+    protected String[] initRequiredClasses() {
+        return new String[] { "CacheNode" };
+    }
+
 }

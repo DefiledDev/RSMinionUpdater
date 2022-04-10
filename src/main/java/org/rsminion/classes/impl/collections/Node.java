@@ -1,6 +1,6 @@
-package org.rsminion.classes.impl;
+package org.rsminion.classes.impl.collections;
 
-import jdk.internal.org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -85,6 +85,11 @@ public class Node extends RSClass {
         /* Next Link */
         if(foundFields[1] != null)
             insert("next", getObfName(), foundFields[1].name, foundFields[1].desc);
+    }
+
+    @Override
+    protected String[] initRequiredClasses() {
+        return Utils.EMPTY_ARRAY;
     }
 
 }

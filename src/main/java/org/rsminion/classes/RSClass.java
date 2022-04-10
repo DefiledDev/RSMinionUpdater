@@ -29,6 +29,8 @@ public abstract class RSClass {
     //work on this and refactoring methods after completing the updater.
     private @Getter final Map<String, RSMethod> methods = new HashMap<>();
 
+    private int matchFrequency = 0;
+
     public RSClass(String name, Matchers.Importance importance) {
         this.name = name;
         this.importance = importance;
@@ -47,15 +49,33 @@ public abstract class RSClass {
 
     protected abstract void locateHooks();
 
+    protected abstract String[] initRequiredClasses();
+
     protected void registerClass(ClassNode clazz) {
         if(clazz.name.startsWith("com/") || clazz.name.startsWith("org/"))
             return;
-        this.clazz = this.clazz != null ? null : clazz;
-        this.obfName = this.obfName != null ? null : clazz.name;
+        if(matchFrequency > 0) {
+            this.clazz = null;
+            this.obfName = null;
+        } else {
+            this.clazz = clazz;
+            this.obfName = clazz.name;
+        }
+        matchFrequency++;
     }
 
     protected MethodNode getConstructor() {
         return Searcher.findMethod(m -> !Modifier.isStatic(m.access) && m.name.equals("<init>"), clazz);
+    }
+
+    public boolean hasRequirements() {
+        String[] requiredClasses = initRequiredClasses();
+        RSClass clazz;
+        for(String className : requiredClasses) {
+            if((clazz = Matchers.getClass(className)) == null || !clazz.isFound())
+                return false;
+        }
+        return true;
     }
 
     public void insert(String name, FieldInsnNode fin) {
