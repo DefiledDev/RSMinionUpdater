@@ -37,7 +37,7 @@ public class MethodSearcher {
             while((instruction = instructions[instSetIndex]) != null &&
                     verifyPatternOpcode(instruction, pattern[patIndex])) {
 
-                if(instSetIndex == (instructions.length - 1))
+                if(instSetIndex == (instructions.length))
                     break outerLoop;
 
                 if(patIndex == (pattern.length - 1)) {

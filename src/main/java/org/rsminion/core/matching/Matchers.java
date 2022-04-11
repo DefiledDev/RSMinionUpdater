@@ -2,11 +2,17 @@ package org.rsminion.core.matching;
 
 import lombok.Getter;
 import org.rsminion.classes.RSClass;
+import org.rsminion.classes.impl.asset.*;
+import org.rsminion.classes.impl.asset.Package;
 import org.rsminion.classes.impl.collections.Node;
 import org.rsminion.classes.impl.collections.*;
 import org.rsminion.classes.impl.collections.Iterable;
 import org.rsminion.classes.impl.io.*;
+import org.rsminion.classes.impl.scene.Model;
+import org.rsminion.classes.impl.scene.Renderable;
 import org.rsminion.classes.impl.security.IsaacCipher;
+import org.rsminion.classes.impl.task.Task;
+import org.rsminion.classes.impl.task.TaskQueue;
 import org.rsminion.core.matching.data.Result;
 import org.rsminion.tools.utils.Condition;
 
@@ -36,6 +42,10 @@ public class Matchers {
                 new HashTableIterator(),
                 new Cache(),
 
+                /* Task */
+                new Task(),
+                new TaskQueue(),
+
                 /* IO */
                 new AbstractByteBuffer(),
                 new Buffer(),
@@ -49,7 +59,19 @@ public class Matchers {
                 new FileCache(),
 
                 /* Security */
-                new IsaacCipher());
+                new IsaacCipher(),
+
+                /* Assets */
+                new AbstractPackage(),
+                new Package(),
+                new LocalRequest(),
+                new RemoteRequest(),
+                //new RemoteAssetRequester()
+
+                /* Scene */
+                new Renderable(),
+                new Model()
+        );
 
         Result.create().print(true, true, true,
                 true, true);
