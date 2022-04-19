@@ -33,16 +33,12 @@ public class MethodSearcher {
             int instSetIndex = i;
             int patIndex = 0;
             AbstractInsnNode instruction;
-
-            while((instruction = instructions[instSetIndex]) != null &&
+            while ((instruction = instructions[instSetIndex]) != null &&
                     verifyPatternOpcode(instruction, pattern[patIndex])) {
 
-                if(instSetIndex == (instructions.length))
-                    break outerLoop;
-
-                if(patIndex == (pattern.length - 1)) {
+                if (patIndex == (pattern.length - 1)) {
                     Pattern result = Pattern.createLinear(method, i, pattern);
-                    if(patternCondition == null || patternCondition.verify(result)) {
+                    if (patternCondition == null || patternCondition.verify(result)) {
 
                         if (instancesFound == patternInstance)
                             return result;
@@ -55,8 +51,14 @@ public class MethodSearcher {
                 instSetIndex++;
                 patIndex++;
 
-                if(instructions[instSetIndex].getOpcode() == -1)
+                if (instructions[instSetIndex].getOpcode() == -1)
                     instSetIndex++;
+
+                if (instSetIndex == (instructions.length))
+                    break outerLoop;
+
+                if(patIndex == pattern.length)
+                    break;
 
             }
         }
@@ -94,6 +96,15 @@ public class MethodSearcher {
                 return result;
         }
         return Pattern.EMPTY_PATTERN;
+    }
+
+    public Pattern[] linearSearchAll(Filter<Pattern> filter, int... pattern) {
+        return cycleInstancesAll(
+                i -> linearSearch(i, pattern), filter, 100);
+    }
+
+    public Pattern[] linearSearchAll(int... pattern) {
+        return linearSearchAll(a -> true, pattern);
     }
 
     /* --------------- Jumps/Branches --------------- */
@@ -160,7 +171,8 @@ public class MethodSearcher {
         instructions = method.instructions.toArray();
         int instance = 0;
         for(int i = startLine; i < endLine; i++) {
-            if(instructions[i].getOpcode() == opcode) {
+            AbstractInsnNode instruction;
+            if((instruction = instructions[i]) != null && verifyPatternOpcode(instruction, opcode)) {
                 if(instance == patternInstance)
                     return Pattern.createSingular(method, opcode, i);
                 instance++;
@@ -228,6 +240,15 @@ public class MethodSearcher {
         return singularIntSearch(value, 0, method.instructions.size(), patternInstance, opcode);
     }
 
+    public Pattern[] singularSearchAll(Filter<Pattern> filter, int pattern) {
+        return cycleInstancesAll(
+                i -> singularSearch(i, pattern), filter, 100);
+    }
+
+    public Pattern[] singularSearchAll(int pattern) {
+        return singularSearchAll(a -> true, pattern);
+    }
+
     public Pattern cycleInstances(Function<Pattern, Integer> searchFunction,
                                   Filter<Pattern> returnCondition,
                                   int maxLoops) {
@@ -261,6 +282,19 @@ public class MethodSearcher {
         return patterns.toArray(new Pattern[0]);
     }
 
+    /* --------------- Misc ----------------------- */
+
+    public List<AbstractInsnNode> getInstructions(Filter<AbstractInsnNode> condition) {
+        instructions = method.instructions.toArray();
+        List<AbstractInsnNode> nodes = new ArrayList<>();
+        for(AbstractInsnNode abstractInsnNode : instructions) {
+            if(condition.verify(abstractInsnNode))
+                nodes.add(abstractInsnNode);
+
+        }
+        return nodes;
+    }
+
     public int[] getInstructionsFrequency(AbstractInsnNode... opcodes) {
         instructions = method.instructions.toArray();
         int[] counts = new int[opcodes.length];
@@ -271,7 +305,7 @@ public class MethodSearcher {
                         FieldInsnNode fin = (FieldInsnNode) ain;
                         FieldInsnNode opcodes_fin = (FieldInsnNode) opcodes[i];
                         if(fin.owner.equals(opcodes_fin.owner) && fin.name.equals(opcodes_fin.name)
-                        && fin.desc.equals(opcodes_fin.desc)) counts[i]++;
+                                && fin.desc.equals(opcodes_fin.desc)) counts[i]++;
                     }
                 } //TODO: add support for Ldc, etc... here
             }
@@ -284,17 +318,39 @@ public class MethodSearcher {
         return result[0] - result[1];
     }
 
-    /* --------------- Misc ----------------------- */
-
-    public List<AbstractInsnNode> getInstructions(Filter<AbstractInsnNode> condition) {
+    public AbstractInsnNode getAbstractInsnNode(int instance, int opcode, int startLine, int maxLines,
+                                                boolean stopAtFields, boolean stopAtJump) {
         instructions = method.instructions.toArray();
-        List<AbstractInsnNode> nodes = new ArrayList<>();
-        for(AbstractInsnNode abstractInsnNode : instructions) {
-            if(condition.verify(abstractInsnNode))
-                nodes.add(abstractInsnNode);
+        int currInstance = 0;
+        for(int i = startLine; i <= (startLine + maxLines); i++) {
+            if(i == method.instructions.size())
+                break;
+            AbstractInsnNode ain = instructions[i];
+            if((stopAtFields && ain instanceof FieldInsnNode) ||
+                    (stopAtJump && ain instanceof JumpInsnNode))
+                break;
 
+            if(ain.getOpcode() == opcode) {
+                if(currInstance == instance) return ain;
+                currInstance++;
+            }
         }
-        return nodes;
+        return null;
+    }
+
+    public Pattern searchForKnown(String obfOwner, String obfName) {
+        instructions = method.instructions.toArray();
+        FieldInsnNode fin;
+        int count = 0;
+        for(AbstractInsnNode ain : instructions) {
+            if(ain instanceof FieldInsnNode) {
+                fin = (FieldInsnNode) ain;
+                if(fin.owner.equals(obfOwner) && fin.name.equals(obfName))
+                    return Pattern.createSingular(method, ain.getOpcode(), count);
+            }
+            count++;
+        }
+        return Pattern.EMPTY_PATTERN;
     }
 
     /* --------------- Dependencies --------------- */
@@ -314,7 +370,9 @@ public class MethodSearcher {
                         //Check if it's a GET Wildcard
                         (currPatternOpcode == Pattern.GET_WILDCARD && (instOpcode == 178 || instOpcode == 180)) ||
                         //Check if it's a PUT Wildcard
-                        (currPatternOpcode == Pattern.PUT_WILDCARD && (instOpcode >= 179 && instOpcode <= 181));
+                        (currPatternOpcode == Pattern.PUT_WILDCARD && (instOpcode >= 179 && instOpcode <= 181)) ||
+                        //Check if it's a LOAD Wildcard
+                        (currPatternOpcode == Pattern.LOAD_WILDCARD && (instOpcode >= 21 && instOpcode <= 25));
     }
     
     public void setMethod(MethodNode method) {
@@ -322,4 +380,8 @@ public class MethodSearcher {
         this.instructions = method.instructions.toArray();
     }
 
+    public MethodSearcher get(MethodNode method) {
+        setMethod(method);
+        return this;
+    }
 }

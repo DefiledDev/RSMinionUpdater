@@ -18,6 +18,8 @@ public class Multipliers extends Deobfuscator {
 
     private final int[][] MULTIPLIERS_PATTERNS = {
             {Opcodes.LDC, Opcodes.ALOAD, Pattern.GET_WILDCARD, Pattern.MUL_WILDCARD},
+            {Opcodes.LDC, Opcodes.ALOAD, Pattern.LOAD_WILDCARD, Pattern.MUL_WILDCARD},
+            {Opcodes.LDC, Pattern.LOAD_WILDCARD, Pattern.MUL_WILDCARD},
             {Opcodes.LDC, Pattern.GET_WILDCARD, Pattern.MUL_WILDCARD},
             {Opcodes.LDC, Opcodes.GETSTATIC, Opcodes.ILOAD, Opcodes.AALOAD, Opcodes.GETFIELD, Pattern.MUL_WILDCARD}
     };

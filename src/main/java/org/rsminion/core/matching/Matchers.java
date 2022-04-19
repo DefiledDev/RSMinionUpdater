@@ -8,8 +8,13 @@ import org.rsminion.classes.impl.collections.Node;
 import org.rsminion.classes.impl.collections.*;
 import org.rsminion.classes.impl.collections.Iterable;
 import org.rsminion.classes.impl.io.*;
+import org.rsminion.classes.impl.scene.item.Item;
 import org.rsminion.classes.impl.scene.Model;
+import org.rsminion.classes.impl.scene.Projectile;
 import org.rsminion.classes.impl.scene.Renderable;
+import org.rsminion.classes.impl.scene.item.ItemLayer;
+import org.rsminion.classes.impl.scene.objects.BoundaryObject;
+import org.rsminion.classes.impl.scene.objects.GameObject;
 import org.rsminion.classes.impl.security.IsaacCipher;
 import org.rsminion.classes.impl.task.Task;
 import org.rsminion.classes.impl.task.TaskQueue;
@@ -70,7 +75,12 @@ public class Matchers {
 
                 /* Scene */
                 new Renderable(),
-                new Model()
+                new Model(),
+                new Projectile(),
+                new Item(),
+                new ItemLayer(),
+                new GameObject(),
+                new BoundaryObject()
         );
 
         Result.create().print(true, true, true,
@@ -107,6 +117,11 @@ public class Matchers {
                 return clazz;
         }
         return null;
+    }
+
+    public static String getObfClass(String className) {
+        RSClass clazz = getClass(className);
+        return clazz != null ? clazz.getObfName() : null;
     }
 
     public enum Importance {

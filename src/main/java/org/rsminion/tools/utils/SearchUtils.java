@@ -83,6 +83,28 @@ public class SearchUtils {
         return descriptions.toArray(new String[0]);
     }
 
+    public static boolean containsParams(MethodNode method, String... params) {
+        String[] parameters = getParameters(method);
+        if(parameters.length > 0) {
+            for(String param : params) {
+                if(Arrays.stream(parameters).noneMatch(s -> s.equals(param)))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static int countParam(MethodNode method, String param) {
+        String[] params = getParameters(method);
+        int count = 0;
+        for(String p : params) {
+            if(p.equals(param))
+                count++;
+        }
+        return count;
+    }
+
     public static boolean isStandaloneObject(ClassNode clazz) {
         return clazz.superName.equals("java/lang/Object");
     }
@@ -131,6 +153,18 @@ public class SearchUtils {
                 return true;
         }
         return false;
+    }
+
+    public static MethodNode getLeastInstructionLength(MethodNode... methods) {
+        MethodNode least = null;
+        int length = Integer.MAX_VALUE;
+        for(MethodNode method : methods) {
+            if(least == null || method.instructions.size() < length) {
+                least = method;
+                length = method.instructions.size();
+            }
+        }
+        return least;
     }
 
     public static boolean isVoid(MethodNode method) {

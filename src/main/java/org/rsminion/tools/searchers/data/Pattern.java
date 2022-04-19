@@ -23,6 +23,7 @@ public class Pattern {
     public static final int MUL_WILDCARD = -22026; //104 -> 107
     public static final int GET_WILDCARD = -22027; //178, 180
     public static final int PUT_WILDCARD = -22028; //179, 181
+    public static final int LOAD_WILDCARD = -22029; //21 -> 25
 
     public static final Pattern EMPTY_PATTERN = new Pattern();
 
@@ -42,6 +43,11 @@ public class Pattern {
 
     public AbstractInsnNode getFirst() {
         return method.instructions.get(firstLine);
+    }
+
+    public FieldInsnNode getFirstFieldNode() {
+        List<FieldInsnNode> fins = getFieldNodes();
+        return fins.size() > 0 ? fins.get(0) : null;
     }
 
     public AbstractInsnNode get(int index) {

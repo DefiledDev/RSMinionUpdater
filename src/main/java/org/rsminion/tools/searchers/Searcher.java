@@ -1,14 +1,12 @@
 package org.rsminion.tools.searchers;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 import org.rsminion.core.gamepack.GamePack;
 import org.rsminion.tools.searchers.data.Pattern;
 import org.rsminion.tools.utils.Filter;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("unchecked")
@@ -197,6 +195,22 @@ public class Searcher {
             }
         }
         return null;
+    }
+
+    public static List<MethodNode> deepFindMethods(Filter<MethodNode> condition) {
+        List<MethodNode> result = new ArrayList<>();
+        ClassSearcher searcher = new ClassSearcher(null);
+        MethodNode method;
+        for(ClassNode clazz : GamePack.getClasses().values()) {
+            if(clazz != null) {
+                searcher.setClazz(clazz);
+                if((method = searcher.findMethod(condition)) != null) {
+                    System.out.println(clazz.name+" "+method.name);
+                    result.add(method);
+                }
+            }
+        }
+        return result;
     }
 
     /**
