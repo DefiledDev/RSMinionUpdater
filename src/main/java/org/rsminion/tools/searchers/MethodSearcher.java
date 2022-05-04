@@ -1,14 +1,18 @@
 package org.rsminion.tools.searchers;
 
+import javafx.util.Pair;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.objectweb.asm.Opcodes;
 import org.rsminion.tools.searchers.data.Pattern;
 import org.objectweb.asm.tree.*;
 import org.rsminion.tools.utils.Filter;
 import org.rsminion.tools.utils.Function;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @NoArgsConstructor
 public class MethodSearcher {
@@ -187,6 +191,7 @@ public class MethodSearcher {
 
     public Pattern singularSearch(Filter<AbstractInsnNode> condition, int startLine, int endLine,
                                   int patternInstance, int opcode) {
+        if(startLine < 0) startLine = 0;
         instructions = method.instructions.toArray();
         int instance = 0;
         for(int i = startLine; i < endLine; i++) {
@@ -195,6 +200,25 @@ public class MethodSearcher {
                 if(instance == patternInstance)
                     return Pattern.createSingular(method, opcode, i);
                 instance++;
+            }
+        }
+        return Pattern.EMPTY_PATTERN;
+    }
+
+    public Pattern singularPatternSearch(Filter<Pattern> condition, int startLine, int endLine,
+                                  int patternInstance, int opcode) {
+        if(startLine < 0) startLine = 0;
+        instructions = method.instructions.toArray();
+        int instance = 0;
+        Pattern result;
+        for(int i = startLine; i < endLine; i++) {
+            if(instructions[i].getOpcode() == opcode) {
+                result = Pattern.createSingular(method, opcode, i);
+                if(condition.verify(result)) {
+                    if (instance == patternInstance)
+                        return result;
+                    instance++;
+                }
             }
         }
         return Pattern.EMPTY_PATTERN;
@@ -351,6 +375,62 @@ public class MethodSearcher {
             count++;
         }
         return Pattern.EMPTY_PATTERN;
+    }
+
+    public Pattern[] searchForAllKnown(String obfOwner, String obfName) {
+        List<Pattern> result = new ArrayList<>();
+        instructions = method.instructions.toArray();
+        FieldInsnNode fin;
+        int count = 0;
+        for(AbstractInsnNode ain : instructions) {
+            if(ain instanceof FieldInsnNode) {
+                fin = (FieldInsnNode) ain;
+                if(fin.owner.equals(obfOwner) && fin.name.equals(obfName))
+                    result.add(Pattern.createSingular(method, ain.getOpcode(), count));
+            }
+            count++;
+        }
+        return result.toArray(new Pattern[0]);
+    }
+
+    public Pattern searchForFrequent(Filter<AbstractInsnNode> filter, int opcode) {
+        Map<String, Pair<Integer,Integer>> frequencies = new HashMap<>(); //Name : frequency
+        instructions = method.instructions.toArray();
+        int line = 0;
+        for(AbstractInsnNode ain : instructions) {
+            if(ain.getOpcode() == opcode && filter.verify(ain)) {
+                FieldInsnNode fin = (FieldInsnNode) ain;
+                Pair<Integer,Integer> frequency = frequencies.get(fin.name);
+                frequencies.put(fin.name,
+                        new Pair<>(line, ((frequency != null ? frequency.getValue() : 0) + 1)));
+            }
+            line++;
+        }
+        String currentField = null;
+        Pair<Integer,Integer> currentFrequency = null;
+        for(String i : frequencies.keySet()) {
+            Pair<Integer,Integer> frequency = frequencies.get(i);
+            if(currentField == null || frequency.getValue() > currentFrequency.getValue()) {
+                currentField = i;
+                currentFrequency = frequency;
+            }
+        }
+        return currentField != null ? Pattern.createSingular(method, opcode, currentFrequency.getKey()) :
+                Pattern.EMPTY_PATTERN;
+    }
+
+    public Pattern searchLocalJump(int opcode, int jumpOpcode, String desc,
+                                    int startLine, int instance, String clazzName) {
+        return jumpSearch(p -> {
+                    FieldInsnNode fin = p.getFirstFieldNode();
+                    return fin.owner.equals(clazzName) && fin.desc.equals(desc);
+                }, jumpOpcode, startLine,
+                100, instance, opcode);
+    }
+
+    public Pattern searchGotoJump(int opcode, String desc, int startLine,
+                                  int instance, String clazzName) {
+        return searchLocalJump(opcode, Opcodes.GOTO, desc, startLine, instance, clazzName);
     }
 
     /* --------------- Dependencies --------------- */

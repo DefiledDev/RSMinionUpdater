@@ -204,10 +204,8 @@ public class Searcher {
         for(ClassNode clazz : GamePack.getClasses().values()) {
             if(clazz != null) {
                 searcher.setClazz(clazz);
-                if((method = searcher.findMethod(condition)) != null) {
-                    System.out.println(clazz.name+" "+method.name);
+                if((method = searcher.findMethod(condition)) != null)
                     result.add(method);
-                }
             }
         }
         return result;
@@ -249,6 +247,21 @@ public class Searcher {
      */
     public static FieldNode findField(Filter<FieldNode> condition, ClassNode clazz) {
         return new ClassSearcher(clazz).findField(condition);
+    }
+
+    public static void findLocations(String owner, String name) {
+        MethodSearcher methodSearcher = new MethodSearcher();
+        Pattern[] result;
+        for(ClassNode clazz : GamePack.getClasses().values()) {
+            List<MethodNode> methods = clazz.methods;
+            for(MethodNode method : methods) {
+                methodSearcher.setMethod(method);
+                result = methodSearcher.searchForAllKnown(owner, name);
+                if(result.length > 0)
+                    System.out.println("Class: " + clazz.name + " Method: " +
+                            method.name + " Count: " + result.length);
+            }
+        }
     }
 
     public static int[] countFieldNodes(ClassNode clazz, Filter<FieldNode>... conditions) {

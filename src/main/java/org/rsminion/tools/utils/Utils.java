@@ -37,4 +37,7 @@ public class Utils {
         return String.format("L%s;", name);
     }
 
+    public static String stripClassFormat(String formatted) {
+        return formatted.substring(1, formatted.length() - 1);
+    }
 }

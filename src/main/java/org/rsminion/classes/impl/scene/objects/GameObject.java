@@ -20,9 +20,7 @@ import java.lang.reflect.Modifier;
 
 @SuppressWarnings("unchecked")
 public class GameObject extends RSClass {
-
-    private MethodSearcher methodSearcher;
-
+    
     public GameObject() {
         super("GameObject", Matchers.Importance.HIGH);
     }
@@ -69,7 +67,7 @@ public class GameObject extends RSClass {
     @Override
     protected void locateHooks() {
         ClassSearcher classSearcher = new ClassSearcher(clazz);
-        methodSearcher = new MethodSearcher();
+        MethodSearcher methodSearcher = new MethodSearcher();
 
         /* id ( J ) */
         FieldNode id = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
@@ -83,8 +81,10 @@ public class GameObject extends RSClass {
         if(renderable != null)
             insert("renderable", clazz.name, renderable.name, renderable.desc);
 
+        String renderableF = Utils.formatAsClass(Matchers.getObfClass("Renderable"));
         MethodNode addEntityMarker = Searcher.deepFindMethod(f -> !Modifier.isStatic(f.access) &&
-                f.desc.contains("(IIIIIIIIL" + Matchers.getObfClass("Renderable") + ";IZ"));
+                f.desc.contains("IIIIIIII" + renderableF + "IZ") &&
+                SearchUtils.countParam(f, renderableF) == 1);
         if(addEntityMarker != null) {
             methodSearcher.setMethod(addEntityMarker);
 
@@ -102,85 +102,79 @@ public class GameObject extends RSClass {
                 //hg.f L23 -> L26
                 //hg.r L26 -> L27
                 if(current.isFound())
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
 
                 /* flags ( I ) */
                 if(current.isFound()) {
                     insert("flags", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* plane ( I ) */
                 if(current.isFound()) {
                     insert("plane", current.getFirstFieldNode());
 
-                    current = methodSearcher.singularSearch(f -> {
-                        FieldInsnNode fin = (FieldInsnNode) f;
-                        return fin.owner.equals(clazz.name) && fin.desc.equals("I");
-                    }, current.getFirstLine() + 1,current.getFirstLine() + 20,
-                            0, Opcodes.PUTFIELD);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* x ( I ) */
                 if(current.isFound()) {
                     insert("x", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* y ( I ) */
                 if(current.isFound()) {
                     insert("y", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* height ( I ) */
                 if(current.isFound()) {
                     insert("height", current.getFirstFieldNode());
 
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals("I");
-                            }, current.getFirstLine() + 1,current.getFirstLine() + 20,
-                            0, Opcodes.PUTFIELD);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* orientation ( I ) */
                 if(current.isFound()) {
                     insert("orientation", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* relativeX ( I ) */
                 if(current.isFound()) {
                     insert("relativeX", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* relativeY ( I ) */
                 if(current.isFound()) {
                     insert("relativeY", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* offsetX ( I ) */
                 if(current.isFound()) {
                     insert("offsetX", current.getFirstFieldNode());
 
-                    current = putJump(Opcodes.PUTFIELD, "I",
-                            current.getFirstLine(), 0);
+                    current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I",
+                            current.getFirstLine(), 1, clazz.name);
                 }
 
                 /* offsetY ( I ) */
@@ -189,19 +183,6 @@ public class GameObject extends RSClass {
             }
 
         }
-    }
-
-    private Pattern putJump(int opcode, String desc, int startLine, int instance) {
-        Pattern jump = methodSearcher.singularSearch(startLine, startLine + 50,
-                0, Opcodes.GOTO);
-        if(jump.isFound()) {
-            return methodSearcher.jumpSearch(p -> {
-                        FieldInsnNode fin = p.getFirstFieldNode();
-                        return fin.owner.equals(clazz.name) && fin.desc.equals(desc);
-                    }, Opcodes.GOTO, jump.getFirstLine(),
-                    100, instance, opcode);
-        }
-        return Pattern.EMPTY_PATTERN;
     }
 
     @Override

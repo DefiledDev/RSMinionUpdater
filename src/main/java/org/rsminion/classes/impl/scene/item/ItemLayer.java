@@ -22,8 +22,7 @@ import java.lang.reflect.Modifier;
 public class ItemLayer extends RSClass {
 
     private String renderableDesc;
-    private MethodSearcher methodSearcher;
-
+    
     public ItemLayer() {
         super("ItemLayer", Matchers.Importance.HIGH);
     }
@@ -36,9 +35,9 @@ public class ItemLayer extends RSClass {
                 high("bottom", "#Renderable", false),
                 high("x", "I", false),
                 high("y", "I", false),
-                high("hash", "J", false),//a.k.a tag
+                high("id", "J", false),//a.k.a tag
                 high("flags", "I", false),//a.k.a tileHeight
-                high("height", "I", false),
+                high("plane", "I", false),
         };
     }
 
@@ -59,104 +58,84 @@ public class ItemLayer extends RSClass {
     @Override
     protected void locateHooks() {
         ClassSearcher classSearcher = new ClassSearcher(clazz);
-        methodSearcher = new MethodSearcher();
+        MethodSearcher methodSearcher = new MethodSearcher();
 
-        /* hash ( I ) */
-        FieldNode hash = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
+        /* id ( I ) */
+        FieldNode id = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
                 f.desc.equals("J"));
-        if(hash != null) {
+        if(id != null)
+            insert("id", clazz.name, id.name, id.desc);
 
-            insert("hash", clazz.name, hash.name, hash.desc);
+        /* addItemPile */
+        MethodNode addItemPile = Searcher.deepFindMethod(m -> !Modifier.isStatic(m.access) &&
+                SearchUtils.isReturnType(m, "V") && SearchUtils.countParam(m, Utils.
+                formatAsClass(Matchers.getObfClass("Renderable"))) == 3 &&
+                SearchUtils.containsParams(m, "I"));
 
-            /* addItemPile */
-            MethodNode addItemPile = Searcher.deepFindMethod(m -> !Modifier.isStatic(m.access) &&
-                    SearchUtils.isReturnType(m, "V") && SearchUtils.countParam(m, Utils.
-                    formatAsClass(Matchers.getObfClass("Renderable"))) == 3 &&
-                    SearchUtils.containsParams(m, "I"));
+        if (addItemPile != null) {
+            //TODO: add ability to add methods to other classes later on, not important
+            methodSearcher.setMethod(addItemPile);
 
-            if (addItemPile != null) {
-                //TODO: add ability to add methods to other classes later on, not important
-                methodSearcher.setMethod(addItemPile);
+            //new ItemLayer()
+            Pattern current = methodSearcher.linearSearch(0,
+                    Opcodes.NEW, Opcodes.DUP, Opcodes.INVOKESPECIAL);
 
-                Pattern current = methodSearcher.searchForKnown(clazz.name, hash.name);
+            if(current.isFound())
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        renderableDesc, current.getFirstLine(), 0, clazz.name);
 
-                if(current.isFound()) {
+            /* bottom ( #Renderable ) */
+            if(current.isFound()) {
+                insert("bottom", current.getFirstFieldNode());
 
-                    Pattern flags = methodSearcher.singularSearch(f -> {
-                        FieldInsnNode fin = (FieldInsnNode) f;
-                        return fin.owner.equals(clazz.name) && fin.desc.equals("I");
-                    }, current.getFirstLine() - 10, current.getFirstLine() - 1,
-                            0, Opcodes.PUTFIELD);
-                    /* flags ( I ) */
-                    if(flags.isFound())
-                        insert("flags", flags.getFirstFieldNode());
-
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals(renderableDesc);
-                            }, current.getFirstLine(), current.getFirstLine() + 20,
-                            0, Opcodes.PUTFIELD);
-
-                }
-
-                /* middle ( #Renderable ) */
-                if(current.isFound()) {
-                    insert("middle", current.getFirstFieldNode());
-
-                    current = putJump(renderableDesc, current.getFirstLine(), 0);
-                }
-
-                /* top ( #Renderable ) */
-                if(current.isFound()) {
-                    insert("top", current.getFirstFieldNode());
-
-                    current = methodSearcher.singularSearch(f -> {
-                        FieldInsnNode fin = (FieldInsnNode) f;
-                        return fin.owner.equals(clazz.name) && fin.desc.equals(renderableDesc)
-                                && !isHookFound(fin.name, true);
-                    }, 0, Opcodes.PUTFIELD);
-                }
-
-                /* bottom ( #Renderable ) */
-                if(current.isFound()) {
-                    insert("bottom", current.getFirstFieldNode());
-
-                    current = putJump("I", current.getFirstLine(), 0);
-                }
-
-                /* x ( I ) */
-                if(current.isFound()) {
-                    insert("x", current.getFirstFieldNode());
-
-                    current = putJump("I", current.getFirstLine(), 0);
-                }
-
-                /* y ( I ) */
-                if(current.isFound())
-                    insert("y", current.getFirstFieldNode());
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        "I", current.getFirstLine(), 1, clazz.name);
             }
 
-            /* height ( I ) */
-            FieldNode height = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
+            /* x ( I ) */
+            if(current.isFound()) {
+                insert("x", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        "I", current.getFirstLine(), 1, clazz.name);
+            }
+
+            /* y ( I ) */
+            if(current.isFound()) {
+                insert("y", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        "I", current.getFirstLine(), 1, clazz.name);
+            }
+
+            /* flags ( I ) */
+            if(current.isFound()) {
+                insert("flags", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        renderableDesc, current.getFirstLine(), 1, clazz.name);
+            }
+
+            /* middle ( #Renderable ) */
+            if(current.isFound()) {
+                insert("middle", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD,
+                        renderableDesc, current.getFirstLine(), 1, clazz.name);
+            }
+
+            /* top ( #Renderable ) */
+            if(current.isFound())
+                insert("top", current.getFirstFieldNode());
+
+            /* plane ( I ) */
+            FieldNode plane = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
                     f.desc.equals("I") && !isHookFound(f.name, true));
-            if(height != null)
-                insert("height", clazz.name, height.name, height.desc);
+            if(plane != null)
+                insert("plane", clazz.name, plane.name, plane.desc);
 
         }
 
-    }
-
-    private Pattern putJump(String desc, int startLine, int instance) {
-        Pattern jump = methodSearcher.singularSearch(startLine, startLine + 50,
-                0, Opcodes.GOTO);
-        if(jump.isFound()) {
-            return methodSearcher.jumpSearch(p -> {
-                        FieldInsnNode fin = p.getFirstFieldNode();
-                        return fin.owner.equals(clazz.name) && fin.desc.equals(desc);
-                    }, Opcodes.GOTO, jump.getFirstLine(),
-                    100, instance, Opcodes.PUTFIELD);
-        }
-        return Pattern.EMPTY_PATTERN;
     }
 
     @Override

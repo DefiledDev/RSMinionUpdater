@@ -114,6 +114,10 @@ public abstract class RSClass {
         return isHookFound(name, false);
     }
 
+    public boolean containsHookType(String type) {
+        return getHook(h -> h.getDesc().equals(type)) != null;
+    }
+
     public boolean isHookFound(String name, boolean obf) {
         RSHook hook;
         if(!obf)

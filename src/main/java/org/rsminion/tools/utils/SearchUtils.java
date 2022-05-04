@@ -167,6 +167,43 @@ public class SearchUtils {
         return least;
     }
 
+    public static MethodNode getMostInstructionLength(MethodNode... methods) {
+        MethodNode least = null;
+        int length = 0;
+        for(MethodNode method : methods) {
+            if(least == null || method.instructions.size() > length) {
+                least = method;
+                length = method.instructions.size();
+            }
+        }
+        return least;
+    }
+
+    public static boolean hasFieldType(ClassNode clazz, String type) {
+        List<FieldNode> fields = clazz.fields;
+        for(FieldNode f : fields) {
+            if(f.desc.equals(type))
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean hasFieldTypes(ClassNode clazz, String... types) {
+        List<FieldNode> fields = clazz.fields;
+        for(String type : types) {
+            boolean found = false;
+            for(FieldNode field : fields) {
+                if (field.desc.equals(type)) {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+                return false;
+        }
+        return true;
+    }
+
     public static boolean isVoid(MethodNode method) {
         return method.desc.contains(")V");
     }
@@ -188,4 +225,7 @@ public class SearchUtils {
         return desc.equals("Ljava/lang/Object;");
     }
 
+    public static boolean isClass(String name) {
+        return name.startsWith("L") && name.endsWith(";");
+    }
 }

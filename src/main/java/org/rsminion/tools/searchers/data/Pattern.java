@@ -79,6 +79,15 @@ public class Pattern {
         return instructions;
     }
 
+    public AbstractInsnNode get(Filter<AbstractInsnNode> filter) {
+        AbstractInsnNode[] all = getAll();
+        for(AbstractInsnNode ain : all) {
+            if(filter.verify(ain))
+                return ain;
+        }
+        return null;
+    }
+
     public AbstractInsnNode[] getFrom(int linesUp, Filter<AbstractInsnNode> filter) {
         List<AbstractInsnNode> result = new ArrayList<>();
         int firstIndex = firstLine - linesUp;

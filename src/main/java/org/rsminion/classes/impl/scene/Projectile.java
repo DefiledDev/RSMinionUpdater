@@ -15,9 +15,7 @@ import org.rsminion.tools.utils.Utils;
 import java.lang.reflect.Modifier;
 
 public class Projectile extends RSClass {
-
-    private MethodSearcher methodSearcher;
-
+    
     public Projectile() {
         super("Projectile", Matchers.Importance.HIGH);
     }
@@ -68,7 +66,7 @@ public class Projectile extends RSClass {
     protected void locateHooks() {
 
         ClassSearcher classSearcher = new ClassSearcher(clazz);
-        methodSearcher = new MethodSearcher();
+        MethodSearcher methodSearcher = new MethodSearcher();
 
         /* isMoving ( Z ) */
         FieldNode isMoving = classSearcher.findField(f -> !Modifier.isStatic(f.access) &&
@@ -81,157 +79,120 @@ public class Projectile extends RSClass {
             !Modifier.isStatic(m.access) &&
             Modifier.isFinal(m.access) && SearchUtils.isReturnType(m,"V") &&
             Utils.isBetween(SearchUtils.countParam(m, "I"), 0, 3));
-        if(update != null) {
+        if(update != null && isHookFound("isMoving")) {
             insert("update", update);
             methodSearcher.setMethod(update);
 
+            assert isMoving != null;
+
             //Fetching Start Line
-            Pattern moving = methodSearcher.singularSearch(f -> {
-                FieldInsnNode fin = (FieldInsnNode) f;
-                return fin.owner.equals(clazz.name) && fin.desc.equals("Z") &&
-                        (isMoving == null || fin.name.equals(isMoving.name));
-            }, 0, Opcodes.PUTFIELD);
-            if(moving.isFound()) {
+            Pattern current = methodSearcher.searchForKnown(clazz.name, isMoving.name);
+            if(current.isFound())
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        0, clazz.name);
 
-                Pattern current = putJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
-                        0);
+            /* x ( D ) */
+            if(current.isFound()) {
+                insert("x", current.getFirstFieldNode());
 
-                if(current.isFound()) {
-
-                    /* x ( D ) */
-                    insert("x", current.getFirstFieldNode());
-
-                    /* speedX ( D ) */
-                    current = methodSearcher.singularSearch(f -> {
-                        FieldInsnNode fin = (FieldInsnNode) f;
-                        return fin.owner.equals(clazz.name) && fin.desc.equals("D");
-                    }, current.getFirstLine(),current.getFirstLine() + 10, 1,
-                            Opcodes.GETFIELD);
-                    if(current.isFound()) {
-                        insert("speedX", current.getFirstFieldNode());
-
-                        current = putJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
-                                0);
-                    }
-                }
-
-                if(current.isFound()) {
-
-                    /* y ( D ) */
-                    insert("y", current.getFirstFieldNode());
-
-                    /* speedY ( D ) */
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals("D");
-                            }, current.getFirstLine(),current.getFirstLine() + 10, 1,
-                            Opcodes.GETFIELD);
-                    if(current.isFound()) {
-                        insert("speedY", current.getFirstFieldNode());
-
-                        current = putJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
-                                0);
-                    }
-
-                }
-
-                if(current.isFound()) {
-
-                    /* z ( D ) */
-                    insert("z", current.getFirstFieldNode());
-
-                    current = putJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
-                            0);
-
-                }
-
-                if(current.isFound()) {
-
-                    /* speedZ ( D ) */
-                    insert("speedZ", current.getFirstFieldNode());
-
-                    /* heightOffset ( D ) */
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals("D");
-                            }, current.getFirstLine(),current.getFirstLine() + 20, 1,
-                            Opcodes.GETFIELD);
-                    if(current.isFound()) {
-                        insert("heightOffset", current.getFirstFieldNode());
-
-                        current = putJump(Opcodes.PUTFIELD, "I", current.getFirstLine(),
-                                0);
-                    }
-
-                }
-
-                if(current.isFound()) {
-                    /* rotationX ( I ) */
-                    insert("rotationX", current.getFirstFieldNode());
-
-                    current = putJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
-                            0);
-                }
-
-                if(current.isFound()) {
-
-                    //If it's speedZ, then the next GetField is scalar
-                    if(isHookFound(current.getFirstFieldNode().name, true))
-                        current = methodSearcher.singularSearch(f -> {
-                                    FieldInsnNode fin = (FieldInsnNode) f;
-                                    return fin.owner.equals(clazz.name) && fin.desc.equals("D");
-                                }, current.getFirstLine(),current.getFirstLine() + 20, 1,
-                                Opcodes.GETFIELD);
-
-                    /* scalar ( D ) */
-                    if(current.isFound())
-                        insert("scalar", current.getFirstFieldNode());
-
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals("I");
-                            }, current.getFirstLine(),current.getFirstLine() + 20, 0,
-                            Opcodes.PUTFIELD);
-                    /* rotationY ( I ) */
-                    if(current.isFound())
-                        insert("rotationY", current.getFirstFieldNode());
-
-                    /* Uncomment when AnimationSequence is done. TODO
-                    current = methodSearcher.singularSearch(f -> {
-                                FieldInsnNode fin = (FieldInsnNode) f;
-                                return fin.owner.equals(clazz.name) && fin.desc.equals(Utils.formatAsClass(Matchers.
-                                        getClass("AnimationSequence").getObfName()));
-                            }, current.getFirstLine(),current.getFirstLine() + 20, 0,
-                            Opcodes.GETFIELD);
-                    if(current.isFound())
-                        insert("animationSequence", current.getFirstFieldNode());
-                     */
-
-                    if(current.isFound()) {
-                        int finalSectionIndex = current.getFirstLine();
-
-                        current = putJump(Opcodes.GETFIELD, "I", current.getFirstLine(),
-                                1);
-                        /* frameProgress ( I ) */
-                        if(current.isFound())
-                            insert("frameProgress", current.getFirstFieldNode());
-
-                        Pattern ifJump = methodSearcher.singularSearch(finalSectionIndex, finalSectionIndex + 50,
-                                0, Pattern.IF_WILDCARD);
-                        if(ifJump.isFound()) {
-
-                            current = methodSearcher.jumpSearch(p -> {
-                                        FieldInsnNode fin = p.getFirstFieldNode();
-                                        return fin.owner.equals(clazz.name) && fin.desc.equals("I");
-                                    }, ifJump.getFirst().getOpcode(), ifJump.getFirstLine(),
-                                    100, 0, Opcodes.PUTFIELD);
-                            /* currentFrameIndex ( I ) */
-                            if(current.isFound())
-                                insert("currentFrameIndex", current.getFirstFieldNode());
-                        }
-                    }
-                }
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
             }
+
+            /* speedX ( D ) */
+            if(current.isFound()) {
+                insert("speedX", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
+            }
+
+            /* y ( D ) */
+            if(current.isFound()) {
+                insert("y", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
+            }
+
+            /* speedY ( D ) */
+            if(current.isFound()) {
+                insert("speedY", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
+            }
+
+            /* z ( D ) */
+            if(current.isFound()) {
+                insert("z", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
+            }
+
+            /* speedZ ( D ) */
+            if(current.isFound()) {
+                insert("speedZ", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        1, clazz.name);
+            }
+
+            /* heightOffset ( D ) */
+            if(current.isFound()) {
+                insert("heightOffset", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I", current.getFirstLine(),
+                        0, clazz.name);
+            }
+
+            /* rotationX ( I ) */
+            if(current.isFound()) {
+                insert("rotationX", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+                        2, clazz.name);
+            }
+
+            /* scalar ( D ) */
+            if(current.isFound()) {
+                insert("scalar", current.getFirstFieldNode());
+
+                current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I", current.getFirstLine(),
+                        0, clazz.name);
+            }
+
+            /* rotationY ( I ) */
+            if(current.isFound()) {
+                insert("rotationY", current.getFirstFieldNode());
+
+                //current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "AnimationSequence", current.getFirstLine(),
+                //        0);
+                current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "I", current.getFirstLine(),
+                        0, clazz.name);
+            }
+
+            /* animationSequence ( #AnimationSequence ) */
+            //TODO: insert here after analyzing AnimationSequence
+
+            /* frameProgress ( I ) */
+            if(current.isFound()) {
+                insert("frameProgress", current.getFirstFieldNode());
+
+                /* currentFrameIndex Search */
+                int line = current.getFirstLine();
+                current = methodSearcher.cycleInstances(
+                        f -> methodSearcher.searchGotoJump(Opcodes.GETFIELD,
+                                "I", line, f, clazz.name),
+                        p -> !isHookFound(p.getFirstFieldNode().name, true),
+                        100);
+            }
+
+            /* currentFrameIndex ( I ) */
+            if(current.isFound())
+                insert("currentFrameIndex", current.getFirstFieldNode());
+
         }
         //End of update(I)
 
@@ -295,22 +256,121 @@ public class Projectile extends RSClass {
         }
     }
 
-    private Pattern putJump(int opcode, String desc, int startLine, int instance) {
-        Pattern jump = methodSearcher.singularSearch(startLine, startLine + 50,
-                0, Opcodes.GOTO);
-        if(jump.isFound()) {
-            return methodSearcher.jumpSearch(p -> {
-                        FieldInsnNode fin = p.getFirstFieldNode();
-                        return fin.owner.equals(clazz.name) && fin.desc.equals(desc);
-                    }, Opcodes.GOTO, jump.getFirstLine(),
-                    100, instance, opcode);
-        }
-        return Pattern.EMPTY_PATTERN;
-    }
-
     @Override
     protected String[] initRequiredClasses() {
         return new String[] { "Renderable" };
     }
 
 }
+/*
+                Pattern current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
+                        0);
+
+                if(current.isFound()) {
+
+insert("x", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
+        2);
+        if(current.isFound()) {
+        insert("speedX", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+        1);
+        }
+        }
+
+        if(current.isFound()) {
+
+        insert("y", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
+        0);
+        if(current.isFound()) {
+        insert("speedY", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+        1);
+        }
+
+        }
+
+        if(current.isFound()) {
+
+        insert("z", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+        1);
+
+        }
+
+        if(current.isFound()) {
+
+        insert("speedZ", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
+        1);
+        if(current.isFound()) {
+        insert("heightOffset", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I", current.getFirstLine(),
+        0);
+        }
+
+        }
+
+        if(current.isFound()) {
+        insert("rotationX", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", current.getFirstLine(),
+        0);
+        }
+
+        if(current.isFound()) {
+
+        //If it's speedZ, then the next GetField is scalar
+        if(isHookFound(current.getFirstFieldNode().name, true))
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "D", moving.getFirstLine(),
+        1);
+
+        if(current.isFound())
+        insert("scalar", current.getFirstFieldNode());
+
+        current = methodSearcher.searchGotoJump(Opcodes.PUTFIELD, "I", moving.getFirstLine(),
+        0);
+        if(current.isFound())
+        insert("rotationY", current.getFirstFieldNode());
+
+                    // Uncomment when AnimationSequence is done. TODO
+                    current = methodSearcher.singularSearch(f -> {
+                                FieldInsnNode fin = (FieldInsnNode) f;
+                                return fin.owner.equals(clazz.name) && fin.desc.equals(Utils.formatAsClass(Matchers.
+                                        getClass("AnimationSequence").getObfName()));
+                            }, current.getFirstLine(),current.getFirstLine() + 20, 0,
+                            Opcodes.GETFIELD);
+                    if(current.isFound())
+                        insert("animationSequence", current.getFirstFieldNode());
+
+
+        if(current.isFound()) {
+        int finalSectionIndex = current.getFirstLine();
+
+        current = methodSearcher.searchGotoJump(Opcodes.GETFIELD, "I", current.getFirstLine(),
+        1);
+        if(current.isFound())
+        insert("frameProgress", current.getFirstFieldNode());
+
+        Pattern ifJump = methodSearcher.singularSearch(finalSectionIndex, finalSectionIndex + 50,
+        0, Pattern.IF_WILDCARD);
+        if(ifJump.isFound()) {
+        current = methodSearcher.jumpSearch(p -> {
+        FieldInsnNode fin = p.getFirstFieldNode();
+        return fin.owner.equals(clazz.name) && fin.desc.equals("I");
+        }, ifJump.getFirst().getOpcode(), ifJump.getFirstLine(),
+        100, 0, Opcodes.PUTFIELD);
+        if(current.isFound())
+        insert("currentFrameIndex", current.getFirstFieldNode());
+        }
+        }
+        }
+        */

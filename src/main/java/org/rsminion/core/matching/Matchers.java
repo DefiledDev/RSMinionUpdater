@@ -7,14 +7,25 @@ import org.rsminion.classes.impl.asset.Package;
 import org.rsminion.classes.impl.collections.Node;
 import org.rsminion.classes.impl.collections.*;
 import org.rsminion.classes.impl.collections.Iterable;
+import org.rsminion.classes.impl.config.name.NameComposite;
+import org.rsminion.classes.impl.config.NpcComposite;
+import org.rsminion.classes.impl.config.ObjectComposite;
+import org.rsminion.classes.impl.config.PlayerComposite;
+import org.rsminion.classes.impl.config.name.NameProvider;
+import org.rsminion.classes.impl.config.name.NameProviderHandler;
+import org.rsminion.classes.impl.devices.Keyboard;
+import org.rsminion.classes.impl.devices.Mouse;
+import org.rsminion.classes.impl.devices.MouseTracker;
 import org.rsminion.classes.impl.io.*;
+import org.rsminion.classes.impl.scene.actor.Actor;
+import org.rsminion.classes.impl.scene.actor.NPC;
+import org.rsminion.classes.impl.scene.actor.Player;
 import org.rsminion.classes.impl.scene.item.Item;
 import org.rsminion.classes.impl.scene.Model;
 import org.rsminion.classes.impl.scene.Projectile;
 import org.rsminion.classes.impl.scene.Renderable;
 import org.rsminion.classes.impl.scene.item.ItemLayer;
-import org.rsminion.classes.impl.scene.objects.BoundaryObject;
-import org.rsminion.classes.impl.scene.objects.GameObject;
+import org.rsminion.classes.impl.scene.objects.*;
 import org.rsminion.classes.impl.security.IsaacCipher;
 import org.rsminion.classes.impl.task.Task;
 import org.rsminion.classes.impl.task.TaskQueue;
@@ -80,7 +91,32 @@ public class Matchers {
                 new Item(),
                 new ItemLayer(),
                 new GameObject(),
-                new BoundaryObject()
+                new BoundaryObject(),
+                new WallObject(),
+                new FloorObject(),
+                new GraphicsObject(),
+                new AnimableObject(),
+                new Actor(),
+                new NPC(),
+
+                /* Configs: Composites */
+                new NpcComposite(),
+                new NameComposite(),
+                new ObjectComposite(),
+
+                /* Configs: Name */
+                new NameProvider(),
+                new NameProviderHandler(),
+
+                /* Scene: Player */
+                new Player(),
+                new PlayerComposite(),
+
+                /* Devices */
+                new Mouse(),
+                new Keyboard(),
+                new MouseTracker()
+
         );
 
         Result.create().print(true, true, true,
